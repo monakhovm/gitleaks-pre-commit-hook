@@ -11,6 +11,7 @@ This repository provides a pre-commit hook for [Gitleaks](https://github.com/git
 ## Prerequisites
 
 - Git
+- git-bash (!Windows only!)
 - Git repository
 
 ## Installation
