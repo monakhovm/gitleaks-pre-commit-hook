@@ -58,11 +58,11 @@ fi
 log_info "Pre-commit hook installed successfully."
 
 # --- 4. Activate Gitleaks hook via git config ---
-log_info "Activating Gitleaks hook using 'git config core.gitleaks-enable true'..."
-git config core.gitleaks-enable true
+log_info "Activating Gitleaks hook using 'git config core.gitleaks true'..."
+git config core.gitleaks true
 
 log_info "Success! Gitleaks will now check your code before each commit."
 log_info "Try making a commit to test the hook."
-log_info "You can disable Gitleaks using: git config core.gitleaks-enable false"
+log_info "You can disable Gitleaks using: git config core.gitleaks false"
 
 exit 0
