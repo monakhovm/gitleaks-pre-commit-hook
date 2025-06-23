@@ -1,5 +1,6 @@
-if (-not (git rev-parse --is-inside-work-tree 2>$null)) {
-    Write-Error "Ця директорія не є git-репозиторієм. Вихід."
+if (-not (git rev-parse --is-inside-work-tree 2>$null)) 
+{
+    Write-Error "Not a git repo. Exiting."
     exit 1
 }
 
@@ -10,7 +11,7 @@ $hookUrl = "https://raw.githubusercontent.com/monakhovm/gitleaks-pre-commit-hook
 $hookPath = ".git/hooks/pre-commit"
 
 if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
-    curl -Lo $hookPath $hookUrl
+    curl -o $hookPath $hookUrl
 } else {
     Invoke-WebRequest -Uri $hookUrl -OutFile $hookPath
 }
