@@ -15,9 +15,16 @@ This repository provides a pre-commit hook for [Gitleaks](https://github.com/git
 
 ## Installation
 
-1. From the ***root** of your `Git` repository*, run
+### Linux and macOS
+1. From the ***root** of your `Git` repository*, run:
 ```sh
 curl https://raw.githubusercontent.com/monakhovm/gitleaks-pre-commit-hook/refs/heads/main/install.sh | sh
+```
+
+### Windows
+1. From the ***root** of your `Git` repository*, run:
+```powershell
+irm https://raw.githubusercontent.com/monakhovm/gitleaks-pre-commit-hook/refs/heads/main/install.ps1 | powershell
 ```
 
 ## Usage
