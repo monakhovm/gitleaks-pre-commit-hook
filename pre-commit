@@ -1,0 +1,140 @@
+#!/bin/sh
+
+GITLEAKS_ENABLED=$(git config --bool core.gitleaks 2>/dev/null)
+
+# Check if gitleaks is enabled
+if [ -z "$GITLEAKS_ENABLED" ]; then
+    git config core.gitleaks true
+    GITLEAKS_ENABLED=true
+fi
+
+# Check if gitleaks is enabled in the git config
+if [ "$GITLEAKS_ENABLED" = "false" ]; then
+    echo "Gitleaks pre-commit hook is disabled by 'git config core.gitleaks-enable false'."
+    exit 0
+fi
+
+echo "Running Gitleaks pre-commit hook..."
+
+if ! command -v gitleaks &> /dev/null; then
+    gitleaks_version="8.27.2"
+
+    current_os=""
+    current_arch=""
+
+    get_os() {
+    if [ -n "$OSTYPE" ]; then
+        echo "$OSTYPE"
+    elif [ -n "$OS" ]; then
+        echo "$OS"
+    else
+        echo "Unknown OS"
+    fi
+    }
+
+    get_arch() {
+    if [ -n "$MACHTYPE" ]; then
+        echo "$MACHTYPE"
+    elif [ -n "$HOSTTYPE" ]; then
+        echo "$HOSTTYPE"
+    else
+        echo "Unknown architecture"
+    fi
+    }
+
+    case "$(get_os)" in
+        cygwin*|msys*|mingw*)
+            current_os="windows"
+        ;;
+
+        linux*|freebsd*|openbsd*|netbsd*|solaris*)
+            current_os="linux"
+        ;;
+        darwin*)
+            current_os="darwin"
+        ;;
+        *)
+            echo "Unsupported operating system: $(get_os)"
+            exit 1
+        ;;
+    esac
+
+    case "$(get_arch)" in
+        x86_64*|amd64*)
+            current_arch="x64"
+        ;;
+        i386*|i486*|i586*|i686*)
+            current_arch="x32"
+        ;;
+        armv7l*|armv8l*|aarch64*)
+            case "$(get_arch)" in
+                armv6*)
+                    current_arch="armv6"
+                ;;
+                armv7*)
+                    current_arch="armv7"
+                ;;
+                aarch64*)
+                    current_arch="arm64"
+                ;;
+            esac
+        ;;
+        *)
+            echo "Unsupported architecture: $(get_arch)"
+            exit 1
+        ;;
+    esac
+
+    if [ $current_os = "windows" ] || [ $current_arch = "armv6" ] || [ $current_arch = "armv7" ]; then
+        file_format="zip"
+    else
+        file_format="tar.gz"
+    fi
+
+    gitleaks_url="https://github.com/gitleaks/gitleaks/releases/download/v${gitleaks_version}/gitleaks_${gitleaks_version}_${current_os}_${current_arch}.${file_format}"
+
+    curl -L -o /tmp/gitleaks.${file_format} "${gitleaks_url}"
+    if [ $? -ne 0 ]; then
+        echo "Failed to download gitleaks from ${gitleaks_url}"
+        exit 1
+    fi
+
+    if [ ! -d ~/.local/bin ]; then
+        echo "Creating ~/.local/bin directory"
+        mkdir ~/.local/bin
+        if [ $? -ne 0 ]; then
+            echo "Failed to create ~/.local/bin directory"
+            exit 1
+        fi
+    fi
+
+    if ! echo $PATH | grep -q "/.local/bin"; then
+        echo "Adding ~/.local/bin to PATH"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+        source ~/.bashrc
+    fi
+
+    if [ $file_format = "zip" ]; then
+        unzip -o gitleaks.${file_format} -d ~/.local/bin
+    else
+        tar -xzf gitleaks.${file_format} -C ~/.local/bin
+    fi
+    if [ $? -ne 0 ]; then
+        echo "Failed to extract gitleaks from gitleaks.${file_format}"
+        exit 1
+    fi
+
+    chmod +x ~/.local/bin/gitleaks
+    if [ $? -ne 0 ]; then
+        echo "Failed to make gitleaks executable"
+        exit 1
+    fi
+
+    rm /tmp/gitleaks.${file_format}
+    if [ $? -ne 0 ]; then
+        echo "Failed to remove temporary file /tmp/gitleaks.${file_format}"
+        exit 1
+    fi
+fi
+# Run gitleaks
+gitleaks detect --source . --redact --report-path report.json
